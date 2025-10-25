@@ -10,5 +10,6 @@ load_idt:
     pop ebp
     ret
 
-problem:    INT 1
+problem:   
+    INT 32
     ret

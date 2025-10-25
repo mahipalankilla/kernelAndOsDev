@@ -8,5 +8,6 @@ void KheapInit(void);
 
 void* kMalloc(size_t bytes);
 void kFree(void*);
+void* kZalloc(size_t bytes);
 
 #endif

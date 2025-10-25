@@ -1,5 +1,6 @@
 #include "memory/heap/kheap.h"
 #include "memory/heap/heap.h"
+#include "memory/memory.h"
 
 heap kernelHeap;
 
@@ -16,4 +17,16 @@ void* kMalloc(size_t bytes)
 void kFree(void* addr)
 {
     HeapFree(&kernelHeap, addr);
+}
+
+void* kZalloc(size_t bytes)
+{
+    void* ptr = kMalloc(bytes);
+
+    if (!ptr)
+        return 0;
+
+    memset(ptr, 0x00, bytes);
+
+    return ptr;
 }

@@ -4,7 +4,7 @@ void* memset(void* ptr, int t, size_t n)
 {
     for(size_t i = 0; i < n ; i++)
     {
-        *((char *)(ptr) + 1) = (char)(t);
+        *((char *)(ptr) + i) = (char)(t);
     }
 
     return ptr; 

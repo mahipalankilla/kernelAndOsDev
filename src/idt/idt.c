@@ -32,6 +32,6 @@ void idtInit()
     idtr.limit = sizeof(idt_descriptor_table) - 1;
     idtr.base = (uint32_t)&idt_descriptor_table[0];
     load_idt(&idtr);
-    setupInterruptHandler(interruptHandlerSample, 1, 0x8E);
+    setupInterruptHandler(interruptHandlerSample, 32, 0x8E);
     problem();
 }

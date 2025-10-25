@@ -30,7 +30,7 @@ int CreateHeap(heap* heap, uint32_t heapTableStAddr, void* startAddr, void* endA
     heap->saddr = startAddr;
 
     // Initialize heap table total number of entries
-    heap->table.total = 20;//((((uint32_t)endAddr-(uint32_t)startAddr) + 1) / HEAP_BLOCK_SIZE_BYTES);
+    heap->table.total = ((((uint32_t)endAddr-(uint32_t)startAddr) + 1) / HEAP_BLOCK_SIZE_BYTES);
 
     // heap table start address
     heap->table.entries = (HEAP_BLOCK_TABLE_ENTRY*)heapTableStAddr;

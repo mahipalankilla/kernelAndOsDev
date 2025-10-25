@@ -4,6 +4,7 @@
 #include <idt/idt.h>
 #include <io/io.h>
 #include <memory/heap/kheap.h>
+#include <memory/paging/paging.h>
 
 uint16_t* video_mem = 0;
 uint16_t terminal_row = 0;
@@ -71,6 +72,8 @@ void print(const char* str)
     }
 }
 
+static struct paging_4gb_chunk* kernel_page_chunk = 0;
+
 void kernel_main()
 {
     terminal_initialize();
@@ -79,18 +82,26 @@ void kernel_main()
 
     KheapInit();
 
-    void* ptr = kMalloc(100);
-    void* ptr1 = kMalloc(5000);
-    void* ptr2 = kMalloc(20);
+    char* ptr = kZalloc(10);
 
-    if(ptr || ptr1 || ptr2)
-    {
-        
-    }
+    kernel_page_chunk = paging_new_4gb(PAGING_IS_WRITEABLE | PAGING_IS_PRESENT | PAGING_ACCESS_FROM_ALL);
 
-    kFree(ptr);
-    kFree(ptr1);
-    kFree(ptr2);
+    paging_switch(paging_4gb_chunk_get_directory(kernel_page_chunk));
 
-    outb(0x60, 0xff);
+    *(ptr) = 'A';
+    ptr[1] = 'B';
+    ptr[2] = '\n';
+
+    char* ptr2 = (char*)0x1000;
+
+    enable_paging();
+
+    modifyPageTableEntry(ptr2, (uint32_t)ptr);
+
+    // if ptr and ptr2 are pointing to 
+     ptr2[1] = 'M';
+
+     print(ptr);
+
+    print(ptr2);
 }
