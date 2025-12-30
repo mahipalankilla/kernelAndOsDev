@@ -1,4 +1,4 @@
-section .txt
+section .text
 global _start
 ORG 0x7c00
 BITS 16

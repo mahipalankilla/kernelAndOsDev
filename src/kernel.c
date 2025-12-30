@@ -5,6 +5,9 @@
 #include <io/io.h>
 #include <memory/heap/kheap.h>
 #include <memory/paging/paging.h>
+#include <disk/disk.h>
+#include "string/string.h"
+#include "fs/pparser.h"
 
 uint16_t* video_mem = 0;
 uint16_t terminal_row = 0;
@@ -52,17 +55,6 @@ void terminal_initialize()
 }
 
 
-size_t strlen(const char* str)
-{
-    size_t len = 0;
-    while(str[len])
-    {
-        len++;
-    }
-
-    return len;
-}
-
 void print(const char* str)
 {
     size_t len = strlen(str);
@@ -78,30 +70,50 @@ void kernel_main()
 {
     terminal_initialize();
     print("Hello world!\ntest\n");
-    idtInit();
 
+    // Initialize the heap
     KheapInit();
 
-    char* ptr = kZalloc(10);
+    // Search and initialize the disks
+    disk_search_and_init();
+
+    // Initialize interrupt descriptor table
+    idtInit();
+
+    // Before enabling pagin, allocations done are on physical level, so these allocations 
+    // will become virtual address after enabling paging and may point to different physical
+    // addresses. Need to keep out eye for these
+    // char* ptr = kZalloc(10);
 
     kernel_page_chunk = paging_new_4gb(PAGING_IS_WRITEABLE | PAGING_IS_PRESENT | PAGING_ACCESS_FROM_ALL);
 
     paging_switch(paging_4gb_chunk_get_directory(kernel_page_chunk));
 
-    *(ptr) = 'A';
-    ptr[1] = 'B';
-    ptr[2] = '\n';
+    // *(ptr) = 'A';
+    // ptr[1] = 'B';
+    // ptr[2] = '\n';
 
-    char* ptr2 = (char*)0x1000;
+    // ptr2 pointing to virtual address 0x1000
+    // char* ptr2 = (char*)0x1000;
 
     enable_paging();
+    enable_interrupts();
+    // Enable this to test paging functionality
+    // modifyPageTableEntry(ptr2, (uint32_t)ptr);
 
-    modifyPageTableEntry(ptr2, (uint32_t)ptr);
+    // print(ptr);
+    // // if ptr and ptr2 are pointing to same physical location
+    // ptr2[1] = 'M';
+    
+    // print(ptr2);
 
-    // if ptr and ptr2 are pointing to 
-     ptr2[1] = 'M';
+    // Test read block working, buff[511] should have 0xaa (booter signature)
+    // char buff[512];
+    // disk_read_block(disk_get(0), 0, 1, buff);
 
-     print(ptr);
-
-    print(ptr2);
+    struct path_root* path_root = pathparser_parse("0:/bin/shell.exe", NULL);
+    if (path_root)
+    {
+        
+    }
 }

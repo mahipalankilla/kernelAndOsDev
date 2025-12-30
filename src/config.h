@@ -15,8 +15,11 @@
 // hape starting address
 #define HEAP_START_ADDR 0x1000000
 
-// Assuming Extended memory at the below address is free and not used for any purpose
+// Assuming memory at the below address is free and not used for any purpose
 // Refer https://wiki.osdev.org/Memory_Map_(x86)
 #define HEAP_TABLE_START_ADDR 0x00007E00
 
+#define PEACHOS_SECTOR_SIZE 512
+
+#define PEACHOS_MAX_PATH_LENGTH 108
 #endif

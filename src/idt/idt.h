@@ -18,4 +18,5 @@ struct idtr_desc
 }__attribute__((packed));
 
 void idtInit();
+extern void enable_interrupts();
 #endif // IDT_H

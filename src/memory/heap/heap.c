@@ -121,20 +121,16 @@ int HeapFree(heap* heap, void* addr)
 
     int si = ((uint32_t)addr - (uint32_t)heap->saddr)/HEAP_BLOCK_SIZE_BYTES;
 
-    int last = si;
-
     for(int i=si; i < heap->table.total; i++)
     {
+        heap->table.entries[i] = HEAP_BLOCK_TABLE_ENTRY_FREE;
+        
         if((heap->table.entries[i] & HEAP_BLOCK_IS_LAST ) == HEAP_BLOCK_IS_LAST)
         {
-            last = i;
-            i = heap->table.total;
+            break;
         }
-
-        heap->table.entries[i] = HEAP_BLOCK_TABLE_ENTRY_FREE;  
-    }
-
-    heap->table.entries[last] = HEAP_BLOCK_TABLE_ENTRY_FREE;  
+ 
+    }  
 
     return 0;
 }
