@@ -8,6 +8,8 @@
 #include <disk/disk.h>
 #include "string/string.h"
 #include "fs/pparser.h"
+#include "disk/streamer.h"
+#include "fs/file.h"
 
 uint16_t* video_mem = 0;
 uint16_t terminal_row = 0;
@@ -66,15 +68,24 @@ void print(const char* str)
 
 static struct paging_4gb_chunk* kernel_page_chunk = 0;
 
+void panic(const char* msg)
+{
+    print(msg);
+    while(1);
+}
+
 void kernel_main()
 {
     terminal_initialize();
-    print("Hello world!\ntest\n");
-
+   // print("Hello world!\ntest\n");
+   
     // Initialize the heap
     KheapInit();
 
-    // Search and initialize the disks
+    // Initialize filesystems
+    fs_init();
+
+    // Search and initialize the disks after the filesystems Init to resolve the filessytem in the disk
     disk_search_and_init();
 
     // Initialize interrupt descriptor table
@@ -111,9 +122,22 @@ void kernel_main()
     // char buff[512];
     // disk_read_block(disk_get(0), 0, 1, buff);
 
-    struct path_root* path_root = pathparser_parse("0:/bin/shell.exe", NULL);
-    if (path_root)
-    {
-        
-    }
+    // struct disk_stream* stream = diskSteamerNew(0);
+    // diskSteamerSeek(stream, 0x201);
+    // unsigned char c  = 0;
+    // diskSteamerRead(stream, &c, 1);
+
+    // Testing for fat16 filessytem
+    // int fd = fopen("0:/hello.txt", "r");
+    // if (fd)
+    // {
+    //     char readfile[80] = {0};
+    //     fseek(fd,2,SEEK_CUR);
+    //     fread(readfile, 51, 1, fd);
+    //     print(readfile);
+    //     struct file_stat fs;
+    //     fstat(fd, &fs);
+    //     fclose(fd);
+    //     print("testing\n");
+    // }
 }

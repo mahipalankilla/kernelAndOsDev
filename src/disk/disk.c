@@ -3,6 +3,7 @@
 #include "memory/memory.h"
 #include "config.h"
 #include "status.h"
+#include "fs/file.h"
 
 struct disk disk;
 int disk_read_sector(int startLba, int totalSectors, void* buff)
@@ -46,6 +47,8 @@ void disk_search_and_init()
     memset(&disk, 0, sizeof(disk));
     disk.diskType = PEACHOS_DISK_TYPE_REAL;
     disk.sectorSize = PEACHOS_SECTOR_SIZE;
+    disk.id = 0;
+    disk.filesystem = fs_resolve(&disk);
 }
 
 struct disk* disk_get(int index)

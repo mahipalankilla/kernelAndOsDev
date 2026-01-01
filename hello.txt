@@ -1,0 +1,2 @@
+Hello World!
+I'm able to read from disk using fat16
