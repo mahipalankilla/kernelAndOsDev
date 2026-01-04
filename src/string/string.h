@@ -10,5 +10,6 @@ char* strcpy(char* dest, const char* src);
 int istrncmp(const char* s1, const char* s2, int n);
 int strncmp(const char* s1, const char* s2, int lenToCompare);
 int strnlen_terminator(const char* str, int max, char terminator);
+char* strncpy(char* dest, const char* src, int n);
 
 #endif

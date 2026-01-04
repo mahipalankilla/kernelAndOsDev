@@ -1,10 +1,11 @@
 FILES = ./build/kernel.asm.o ./build/kernel.o ./build/idt.asm.o ./build/idt.o ./build/memory.o ./build/io.asm.o ./build/memory/heap/heap.o \
 ./build/memory/heap/kheap.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/disk/disk.o ./build/string/string.o \
-./build/fs/pparser.o ./build/disk/streamer.o ./build/fs/file.o ./build/fs/fat/fat16.o
+./build/fs/pparser.o ./build/disk/streamer.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/gdt/gdt.o ./build/gdt/gdt.asm.o ./build/task/tss.asm.o \
+./build/task/task.o ./build/task/process.o ./build/task/task.asm.o
 INCLUDES =  -I ./src
 FLAGS = -g -ffreestanding -falign-jumps -falign-functions -falign-labels -falign-loops -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nodefaultlibs -Wall -O0 -Iinc
 
-all: ./bin/boot.bin ./bin/kernel.bin
+all: ./bin/boot.bin ./bin/kernel.bin user_programs
 	rm -rf ./bin/os.bin
 	dd if=./bin/boot.bin >> ./bin/os.bin
 	dd if=./bin/kernel.bin >> ./bin/os.bin
@@ -12,6 +13,7 @@ all: ./bin/boot.bin ./bin/kernel.bin
 	sudo mount -t vfat ./bin/os.bin /mnt/d
 	# copy a file over
 	sudo cp ./hello.txt /mnt/d
+	sudo cp ./programs/blank/blank.bin /mnt/d
 	sudo umount /mnt/d
 
 ./bin/kernel.bin: $(FILES)
@@ -78,6 +80,35 @@ all: ./bin/boot.bin ./bin/kernel.bin
 	mkdir -p ./build/fs/fat
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu99 -c ./src/fs/fat/fat16.c -o ./build/fs/fat/fat16.o
 
-clean:
+./build/gdt/gdt.o: ./src/gdt/gdt.c
+	mkdir -p ./build/gdt
+	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu99 -c ./src/gdt/gdt.c -o ./build/gdt/gdt.o
+
+./build/gdt/gdt.asm.o: ./src/gdt/gdt.asm
+	nasm -f elf -g -F dwarf ./src/gdt/gdt.asm -o ./build/gdt/gdt.asm.o
+
+./build/task/tss.asm.o: ./src/task/tss.asm
+	mkdir -p ./build/task
+	nasm -f elf -g -F dwarf ./src/task/tss.asm -o ./build/task/tss.asm.o
+
+./build/task/task.o: ./src/task/task.c
+	mkdir -p ./build/task
+	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu99 -c ./src/task/task.c -o ./build/task/task.o
+
+./build/task/process.o: ./src/task/process.c
+	mkdir -p ./build/task
+	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu99 -c ./src/task/process.c -o ./build/task/process.o
+
+./build/task/task.asm.o: ./src/task/task.asm
+	mkdir -p ./build/task
+	nasm -f elf -g -F dwarf ./src/task/task.asm -o ./build/task/task.asm.o
+
+user_programs:
+	cd ./programs/blank && $(MAKE) all
+
+user_programs_clean:
+	cd ./programs/blank && $(MAKE) clean
+
+clean: user_programs_clean
 	rm -rf ./bin/*
 	rm -rf ./build/*

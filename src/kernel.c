@@ -10,6 +10,13 @@
 #include "fs/pparser.h"
 #include "disk/streamer.h"
 #include "fs/file.h"
+#include "gdt/gdt.h"
+#include "config.h"
+#include "memory/memory.h"
+#include "task/tss.h"
+#include "task/task.h"
+#include "task/process.h"
+#include "status.h"
 
 uint16_t* video_mem = 0;
 uint16_t terminal_row = 0;
@@ -74,11 +81,26 @@ void panic(const char* msg)
     while(1);
 }
 
+struct tss tss;
+struct gdt gdt[PEACHOS_DESCRIPTOR_SEGMENTS];
+struct gdt_structured gdt_structured[PEACHOS_DESCRIPTOR_SEGMENTS] = {
+    {.base = 0x0, .limit = 0x0, .type = 0x0}, // Null type
+    {.base = 0x0, .limit = 0xffffffff, .type = 0x9a}, // Kernel code segment
+    {.base = 0x0, .limit = 0xffffffff, .type = 0x92}, // kernel data segment
+    {.base = 0x0, .limit = 0xffffffff, .type = 0xf8}, // user code sgment
+    {.base = 0x0, .limit = 0xffffffff, .type = 0xf2},  // user data segment
+    {.base = (uint32_t)&tss, .limit = sizeof(tss), .type = 0xE9} // tss segment 
+};
+
 void kernel_main()
 {
     terminal_initialize();
-   // print("Hello world!\ntest\n");
-   
+    print("Hello world!\ntest\n");
+
+    memset(gdt, 0, sizeof(gdt));
+    gdt_structured_to_gdt(gdt, gdt_structured, PEACHOS_DESCRIPTOR_SEGMENTS);
+    gdt_load(gdt, sizeof(gdt) - 1);
+    
     // Initialize the heap
     KheapInit();
 
@@ -90,6 +112,14 @@ void kernel_main()
 
     // Initialize interrupt descriptor table
     idtInit();
+
+    // setup the TSS
+    memset (&tss, 0x00, sizeof(tss));
+    tss.esp0 = 0x600000;
+    tss.ss0 = KERNEL_DATA_SELECTOR;
+
+    // Load the TSS
+    tss_load(0x28);
 
     // Before enabling pagin, allocations done are on physical level, so these allocations 
     // will become virtual address after enabling paging and may point to different physical
@@ -108,7 +138,7 @@ void kernel_main()
     // char* ptr2 = (char*)0x1000;
 
     enable_paging();
-    enable_interrupts();
+    //enable_interrupts();
     // Enable this to test paging functionality
     // modifyPageTableEntry(ptr2, (uint32_t)ptr);
 
@@ -140,4 +170,15 @@ void kernel_main()
     //     fclose(fd);
     //     print("testing\n");
     // }
+
+    struct process* process = 0;
+    int res = process_load("0:/blank.bin", &process);
+    if (res != PEACHOS_ALL_OK)
+    {
+        panic("failed to load blank.bin \n");
+    }
+
+    print("process load complete\n");
+    task_run_first_ever_task();
+    //while(1);
 }

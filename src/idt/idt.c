@@ -29,7 +29,7 @@ void setupInterruptHandler(int intID, void *ptr)
 {
     struct idt_desc* idtEntryPtr = &idt_descriptor_table[intID];
     idtEntryPtr->offset_1 = (uint32_t)ptr & (0x0000FFFF);
-    idtEntryPtr->selector = CODE_SELECTOR;
+    idtEntryPtr->selector = KERNEL_CODE_SELECTOR;
     idtEntryPtr->zero = 0;
     idtEntryPtr->type_attr = 0xEE;
     idtEntryPtr->offset_2 = (uint32_t)ptr >> 16;
