@@ -40,10 +40,10 @@ uint32_t* paging_4gb_chunk_get_directory(struct paging_4gb_chunk* chunk)
     return chunk->directory_entry;
 }
 
-void paging_switch(uint32_t* directory)
+void paging_switch(struct paging_4gb_chunk* chunk)
 {
-    paging_load_directory(directory);
-    current_directory = directory;
+    paging_load_directory(chunk->directory_entry);
+    current_directory = chunk->directory_entry;
 }
 
 void modifyPageTableEntry(void* virtualAddress, uint32_t phyAddr)
@@ -87,18 +87,18 @@ int paging_set(uint32_t* directory, void* virt, void* phy)
     return PEACHOS_ALL_OK;
 }
 
-int paging_map(uint32_t* directory, void* virt, void* phy, int flags)
+int paging_map(struct paging_4gb_chunk* chunk, void* virt, void* phy, int flags)
 {
     if (((unsigned int) virt % PAGE_SIZE_IN_BYTES) || ((unsigned int)phy % PAGE_SIZE_IN_BYTES))
     {
         return -EINVARG;
     }
 
-    return  paging_set(directory, virt, (void*)(((uint32_t) phy) | flags));
+    return  paging_set(chunk->directory_entry, virt, (void*)(((uint32_t) phy) | flags));
 
 }
 
-int paging_map_range(uint32_t* directory, void* virt, void* phy, int count, int flags)
+int paging_map_range(struct paging_4gb_chunk* directory, void* virt, void* phy, int count, int flags)
 {
     int res = 0;
     for (int i=0; i< count; i++)
@@ -113,7 +113,7 @@ int paging_map_range(uint32_t* directory, void* virt, void* phy, int count, int 
     return res;
 }
 
-int paging_map_to(uint32_t* directory, void* virt, void* phy, void* phy_end, int flags)
+int paging_map_to(struct paging_4gb_chunk* directory, void* virt, void* phy, void* phy_end, int flags)
 {
     int res = 0;
 
@@ -158,4 +158,22 @@ void* paging_align_addres(void* ptr)
     }
     
     return ptr;
+}
+
+void paging_get_indexes(void* virt, uint32_t* directory_index_ptr, uint32_t* table_index_ptr)
+{
+    *directory_index_ptr = (uint32_t)(virt) / (PAGE_SIZE_IN_BYTES * PAGE_TABLE_ENTRIES_PER_TABLE);
+
+    *table_index_ptr = (uint32_t)(virt) % PAGE_SIZE_IN_BYTES;
+
+    return;
+}
+uint32_t paging_get(uint32_t* directory, void* virt)
+{
+    uint32_t directory_index = 0;
+    uint32_t table_index = 0;
+    paging_get_indexes(virt, &directory_index, &table_index);
+    uint32_t directoryEntry = directory[directory_index];
+    uint32_t* pageTable = (uint32_t*)(directoryEntry & 0xfffff000);
+    return pageTable[table_index];
 }

@@ -1,6 +1,6 @@
 all:
 	mkdir -p ./build/blank
-	nasm -f elf ./blank.asm -o ./build/blank.o
+	nasm -f elf -g -F dwarf ./blank.asm -o ./build/blank.o
 	i686-elf-gcc -g -T ./linker.ld -o ./blank.bin -ffreestanding -O0 -nostdlib -fpic -g ./build/blank.o
 
 clean:	

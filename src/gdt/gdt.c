@@ -1,5 +1,6 @@
 #include "gdt.h"
 #include "kernel.h"
+#include "task/task.h"
 
 void generate_gdt(uint8_t* gdt, struct gdt_structured source)
 {

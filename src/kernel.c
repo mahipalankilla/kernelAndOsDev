@@ -17,6 +17,7 @@
 #include "task/task.h"
 #include "task/process.h"
 #include "status.h"
+#include "isr80h/isr80h.h"
 
 uint16_t* video_mem = 0;
 uint16_t terminal_row = 0;
@@ -92,6 +93,12 @@ struct gdt_structured gdt_structured[PEACHOS_DESCRIPTOR_SEGMENTS] = {
     {.base = (uint32_t)&tss, .limit = sizeof(tss), .type = 0xE9} // tss segment 
 };
 
+void kernel_page()
+{
+    kernel_registers();
+    paging_switch(kernel_page_chunk);
+}
+
 void kernel_main()
 {
     terminal_initialize();
@@ -128,7 +135,7 @@ void kernel_main()
 
     kernel_page_chunk = paging_new_4gb(PAGING_IS_WRITEABLE | PAGING_IS_PRESENT | PAGING_ACCESS_FROM_ALL);
 
-    paging_switch(paging_4gb_chunk_get_directory(kernel_page_chunk));
+    paging_switch(kernel_page_chunk);
 
     // *(ptr) = 'A';
     // ptr[1] = 'B';
@@ -138,6 +145,8 @@ void kernel_main()
     // char* ptr2 = (char*)0x1000;
 
     enable_paging();
+
+    isr80h_register_commands();
     //enable_interrupts();
     // Enable this to test paging functionality
     // modifyPageTableEntry(ptr2, (uint32_t)ptr);
@@ -177,8 +186,7 @@ void kernel_main()
     {
         panic("failed to load blank.bin \n");
     }
-
-    print("process load complete\n");
+    
     task_run_first_ever_task();
     //while(1);
 }
