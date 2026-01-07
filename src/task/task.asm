@@ -21,6 +21,7 @@ restore_general_puspose_registers:
     pop ebp
     ret
 
+;void user_registers()
 user_registers:
     mov ax, 0x23
     mov ds, ax
@@ -47,6 +48,7 @@ task_return:
     ; push the stack selector
     push dword [ebx+40]
 
+    ; Enable interrupts
     pushf
     pop eax
     or eax, 0x200
@@ -71,6 +73,3 @@ task_return:
 
     ; let's leave kernel ring and enter user ring
     iretd
-
-
-;void user_registers()

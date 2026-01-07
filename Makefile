@@ -1,7 +1,9 @@
 FILES = ./build/kernel.asm.o ./build/kernel.o ./build/idt.asm.o ./build/idt.o ./build/memory.o ./build/io.asm.o ./build/memory/heap/heap.o \
 ./build/memory/heap/kheap.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/disk/disk.o ./build/string/string.o \
 ./build/fs/pparser.o ./build/disk/streamer.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/gdt/gdt.o ./build/gdt/gdt.asm.o ./build/task/tss.asm.o \
-./build/task/task.o ./build/task/process.o ./build/task/task.asm.o ./build/isr80h/isr80h.o ./build/isr80h/misc.o ./build/isr80h/io.o
+./build/task/task.o ./build/task/process.o ./build/task/task.asm.o ./build/isr80h/isr80h.o ./build/isr80h/misc.o ./build/isr80h/io.o ./build/keyboard/keyboard.o \
+./build/keyboard/classicPs2.o
+
 INCLUDES =  -I ./src
 FLAGS = -g -ffreestanding -falign-jumps -falign-functions -falign-labels -falign-loops -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nodefaultlibs -Wall -O0 -Iinc
 
@@ -18,6 +20,7 @@ all: ./bin/boot.bin ./bin/kernel.bin user_programs
 
 ./bin/kernel.bin: $(FILES)
 	i686-elf-ld -g -relocatable $(FILES) -o ./build/kernelfull.o
+	i686-elf-gcc $(FLAGS) -T ./src/linkerElf.ld -o ./bin/kernel.elf -ffreestanding -O0 -nostdlib ./build/kernelfull.o
 	i686-elf-gcc $(FLAGS) -T ./src/linker.ld -o ./bin/kernel.bin -ffreestanding -O0 -nostdlib ./build/kernelfull.o
 
 ./bin/boot.bin: ./src/boot/boot.asm
@@ -114,6 +117,14 @@ all: ./bin/boot.bin ./bin/kernel.bin user_programs
 ./build/isr80h/io.o: ./src/isr80h/io.c
 	mkdir -p ./build/isr80h
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu99 -c ./src/isr80h/io.c -o ./build/isr80h/io.o
+
+./build/keyboard/keyboard.o: ./src/keyboard/keyboard.c
+	mkdir -p ./build/keyboard
+	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu99 -c ./src/keyboard/keyboard.c -o ./build/keyboard/keyboard.o
+
+./build/keyboard/classicPs2.o: ./src/keyboard/classicPs2.c
+	mkdir -p ./build/keyboard
+	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu99 -c ./src/keyboard/classicPs2.c -o ./build/keyboard/classicPs2.o
 
 user_programs:
 	cd ./programs/blank && $(MAKE) all

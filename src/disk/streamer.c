@@ -30,25 +30,33 @@ int diskSteamerRead(struct disk_stream* stream, void* out, int total)
     int offset = stream->pos % PEACHOS_SECTOR_SIZE;
 
     char buff[PEACHOS_SECTOR_SIZE];
+
+    int total_to_read = total;
+
+    bool overflow = (offset + total_to_read) >= PEACHOS_SECTOR_SIZE;
+
     int res = disk_read_block(stream->disk, sector, 1, buff);
     if (res < 0)
     {
         goto out;
     }
 
-    int totalBytesToCopy = (total <= PEACHOS_SECTOR_SIZE) ? total : PEACHOS_SECTOR_SIZE;
+    if (overflow)
+    {
+        total_to_read = PEACHOS_SECTOR_SIZE - offset;
+    }
 
-    for(int i = 0; i < totalBytesToCopy; i++)
+    for(int i = 0; i < total_to_read; i++)
     {
         *(char*)out++ = buff[i+offset];
     }
 
     // Adjust the stream
-    stream->pos += totalBytesToCopy;
+    stream->pos += total_to_read;
 
-    if (total > PEACHOS_SECTOR_SIZE)
+    if (overflow)
     {
-        res = diskSteamerRead(stream, out, total - PEACHOS_SECTOR_SIZE);
+        res = diskSteamerRead(stream, out, total - total_to_read);
     }
 
     out:

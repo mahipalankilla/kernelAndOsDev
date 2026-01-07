@@ -18,6 +18,8 @@
 #include "task/process.h"
 #include "status.h"
 #include "isr80h/isr80h.h"
+#include "keyboard/keyboard.h"
+#include "idt/idt.h"
 
 uint16_t* video_mem = 0;
 uint16_t terminal_row = 0;
@@ -33,12 +35,38 @@ void terminal_putchar(int x, int y, char c, char colour)
     video_mem[(y * VGA_WIDTH) + x] = terminal_make_char(c, colour);
 }
 
+void terminal_backspace()
+{
+    if (terminal_row == 0 && terminal_col == 0)
+    {
+        return;
+    }
+
+    if(terminal_col == 0)
+    {
+        terminal_row -= 1;
+        terminal_col = VGA_WIDTH - 1;
+        terminal_putchar(terminal_col, terminal_row, ' ', 15);
+        return;
+    }
+
+    terminal_col -= 1;
+    terminal_writechar(' ', 15);
+    terminal_col -= 1;
+
+}
 void terminal_writechar(char c, char colour)
 {
     if (c == '\n')
     {
         terminal_row += 1;
         terminal_col = 0;
+        return;
+    }
+
+    if (c == 0x08)
+    {
+        terminal_backspace();
         return;
     }
     
@@ -50,6 +78,7 @@ void terminal_writechar(char c, char colour)
         terminal_row += 1;
     }
 }
+
 void terminal_initialize()
 {
     video_mem = (uint16_t*)(0xB8000);
@@ -102,7 +131,7 @@ void kernel_page()
 void kernel_main()
 {
     terminal_initialize();
-    print("Hello world!\ntest\n");
+    // print("Hello world!\ntest\n");
 
     memset(gdt, 0, sizeof(gdt));
     gdt_structured_to_gdt(gdt, gdt_structured, PEACHOS_DESCRIPTOR_SEGMENTS);
@@ -180,13 +209,17 @@ void kernel_main()
     //     print("testing\n");
     // }
 
+    // Initialize all the system keyboards
+    keyboard_init();
+
     struct process* process = 0;
-    int res = process_load("0:/blank.bin", &process);
+    int res = process_load_switch("0:/blank.bin", &process);
     if (res != PEACHOS_ALL_OK)
     {
         panic("failed to load blank.bin \n");
     }
-    
+
+    //print("program loaded\n");
     task_run_first_ever_task();
     //while(1);
 }

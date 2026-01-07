@@ -4,30 +4,17 @@
 #include <kernel.h>
 #include <io/io.h>
 #include "task/task.h"
+#include "status.h"
 
 struct idt_desc idt_descriptor_table[PEACHOS_TOTAL_INTERRUPTS];
 struct idtr_desc idtr;
 extern void load_idt(struct idtr_desc *idtr);
 void idt_init();
-void interruptHandlerSample();
-extern void problem();
-extern void int21h();
-extern void no_interrupt();
 extern void isr80h_wrapper();
 
+extern void* interrupt_func_addresses[PEACHOS_TOTAL_INTERRUPTS];
 static ISR80H_COMMAND isr80h_commands[PEACHOS_MAX_ISR80H_COMMANDS];
-
-void int21h_handler()
-{
-    print("keyboard pressed! \n");
-    outb(0x20, 0x20);
-}
-
-void no_interrupt_handler()
-{
-    outb(0x20, 0x20);
-}
-
+static INTERRUPT_CALLBACK_FUNC callback_functions[PEACHOS_TOTAL_INTERRUPTS];
 
 void setupInterruptHandler(int intID, void *ptr)
 {
@@ -47,10 +34,9 @@ void idtInit()
 
     for (int i=0; i < PEACHOS_TOTAL_INTERRUPTS; i++)
     {
-        setupInterruptHandler(i, no_interrupt);
+        setupInterruptHandler(i, interrupt_func_addresses[i]);
     }
 
-    setupInterruptHandler(0x21, int21h);
     setupInterruptHandler(0x80,isr80h_wrapper);
     load_idt(&idtr);
 }
@@ -100,4 +86,27 @@ void* isr80h_handler(int command, struct interrupt_frame* frame)
     res = isr80h_handle_command(command, frame);
     task_page();
     return res;
+}
+
+int register_interrupt_callback_function(int interrupt, INTERRUPT_CALLBACK_FUNC func)
+{
+    if (interrupt < 0 || interrupt >= PEACHOS_TOTAL_INTERRUPTS)
+    {
+        return -EINVARG;
+    }
+
+    callback_functions[interrupt] = func;
+    return 0;
+}
+
+void interrupt_handler(int interrupt, struct interrupt_frame* frame)
+{
+    kernel_page();
+    if (callback_functions[interrupt] != 0)
+    {
+        task_current_save_state(frame);
+        callback_functions[interrupt](frame);
+    }
+    task_page();
+    outb(0x20, 0x20);
 }

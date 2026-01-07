@@ -1,13 +1,13 @@
+
+section .asm
+
 global load_idt
 global problem
-section .asm
-extern int21h_handler
-extern no_interrupt_handler
+
 extern isr80h_handler
 global enable_interrupts
-global int21h
-global no_interrupt
 global isr80h_wrapper
+extern interrupt_handler
 
 load_idt:
     push ebp
@@ -16,30 +16,6 @@ load_idt:
     lidt [ebx]
     pop ebp
     ret
-
-problem:
-    pushad
-    cli
-    INT 32
-    popad
-    sli
-    iret
-
-int21h:
-    pushad
-    cli
-    call int21h_handler
-    popad
-    sti
-    iret
-
-no_interrupt:
-    pushad
-    cli
-    call no_interrupt_handler
-    popad
-    sti
-    iret
 
 enable_interrupts:
     push ebp    
@@ -78,7 +54,37 @@ isr80h_wrapper:
     mov eax, [temp_res]
     iretd
 
+%macro interrupt 1
+    global int%1
+    int%1:
+        cli
+        pushad
+        push esp 
+        push dword %1
+        call interrupt_handler
+        add esp, 8
+        popad
+        iret
+%endmacro
+
+%assign i 0
+%rep 512
+    interrupt i
+    %assign i i+1
+%endrep
 
 section .data
-temp_res: dw 0x0
 
+global interrupt_func_addresses
+
+%macro interrupt_address 1
+    dd int%1
+%endmacro
+
+interrupt_func_addresses:
+%assign i 0
+%rep 512
+    interrupt_address i
+    %assign i i+1
+%endrep
+temp_res: dw 0x0
